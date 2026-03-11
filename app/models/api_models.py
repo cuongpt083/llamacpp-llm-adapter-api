@@ -1,5 +1,5 @@
 from typing import List, Optional, Any, Dict, Literal
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 class ChatCompletionMessage(BaseModel):
     role: str
@@ -20,7 +20,8 @@ class OpenAIChatCompletionRequest(BaseModel):
     frequency_penalty: Optional[float] = 0.0
     user: Optional[str] = None
 
-    @validator("messages")
+    @field_validator("messages")
+    @classmethod
     def messages_must_not_be_empty(cls, v):
         if not v:
             raise ValueError("messages must not be empty")

@@ -35,8 +35,8 @@ async def chat_completions(request: OpenAIChatCompletionRequest):
         )
     
     # 2. Reconstruct request for upstream
-    upstream_payload = request.dict(exclude_unset=True)
-    upstream_payload["messages"] = [m.dict(exclude_none=True) for m in result.normalized_messages]
+    upstream_payload = request.model_dump(exclude_unset=True)
+    upstream_payload["messages"] = [m.model_dump(exclude_none=True) for m in result.normalized_messages]
     
     if settings.LOG_NORMALIZED_REQUESTS:
         logger.info("Forwarding normalized request", 
