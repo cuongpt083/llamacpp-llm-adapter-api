@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import routes_chat, routes_health, routes_models, routes_completions, routes_embeddings
+from app.api import routes_chat, routes_health, routes_models, routes_completions, routes_embeddings, routes_responses
 from app.core.config import settings
 from app.core.logging import setup_logging
 
@@ -19,6 +19,7 @@ app.include_router(routes_chat.router, prefix=settings.API_V1_STR)
 app.include_router(routes_models.router, prefix=settings.API_V1_STR)
 app.include_router(routes_completions.router, prefix=settings.API_V1_STR)
 app.include_router(routes_embeddings.router, prefix=settings.API_V1_STR)
+app.include_router(routes_responses.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():
