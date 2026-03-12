@@ -2,7 +2,14 @@ from typing import List
 
 from app.models.api_models import ChatCompletionMessage
 from app.routing.models import RouteDecision
-from app.routing.rules import CODE_BLOCK_PATTERN, DEEP_KEYWORDS, DEEP_ROLE_TRIGGERS, MULTISTEP_PATTERNS, normalize_text
+from app.routing.rules import (
+    CODE_BLOCK_PATTERN,
+    DEEP_KEYWORDS,
+    DEEP_ROLE_TRIGGERS,
+    MULTISTEP_PATTERNS,
+    extract_mode_override,
+    normalize_text,
+)
 
 
 class PromptRouter:
@@ -12,6 +19,22 @@ class PromptRouter:
 
     def route(self, client_requested_model: str | None, messages: List[ChatCompletionMessage]) -> RouteDecision:
         reasons: List[str] = []
+        override = extract_mode_override(messages)
+
+        if override == "fast":
+            return RouteDecision(
+                client_requested_model=client_requested_model,
+                route_label="fast",
+                resolved_model=self.fast_model,
+                reasons=["override:fast"],
+            )
+        if override == "deep":
+            return RouteDecision(
+                client_requested_model=client_requested_model,
+                route_label="deep",
+                resolved_model=self.deep_model,
+                reasons=["override:deep"],
+            )
 
         for message in messages:
             if message.role in DEEP_ROLE_TRIGGERS:

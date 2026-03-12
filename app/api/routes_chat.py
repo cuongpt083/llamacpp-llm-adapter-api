@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.models.api_models import OpenAIChatCompletionRequest
 from app.normalizer.pipeline import NormalizationPipeline
 from app.routing.router import PromptRouter
+from app.routing.rules import strip_mode_hints
 from app.upstream.client import UpstreamClient
 
 router = APIRouter()
@@ -78,11 +79,20 @@ async def chat_completions(request: OpenAIChatCompletionRequest):
     """
     Standard OpenAI-compatible Chat Completions endpoint with normalization.
     """
-    route_decision = build_router().route(
-        client_requested_model=request.model,
-        messages=request.messages,
-    )
-    result = pipeline.process(model=route_decision.resolved_model, messages=request.messages)
+    try:
+        sanitized_messages = strip_mode_hints(request.messages)
+        route_decision = build_router().route(
+            client_requested_model=request.model,
+            messages=request.messages,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": {"message": str(exc)}},
+        ) from exc
+
+    sanitized_request = request.model_copy(update={"messages": sanitized_messages})
+    result = pipeline.process(model=route_decision.resolved_model, messages=sanitized_messages)
     
     if not result.validation_result:
         logger.error(
@@ -116,12 +126,12 @@ async def chat_completions(request: OpenAIChatCompletionRequest):
 
     if request.stream:
         return StreamingResponse(
-            upstream.stream(build_upstream_payload(request, result)),
+            upstream.stream(build_upstream_payload(sanitized_request, result)),
             media_type="text/event-stream"
         )
     
     try:
-        response_data = await send_with_optional_failover(request, route_decision, result)
+        response_data = await send_with_optional_failover(sanitized_request, route_decision, result)
         return response_data
     except Exception as exc:
         logger.exception("Upstream error", error=str(exc))
@@ -135,9 +145,17 @@ async def chat_completions_normalize(request: OpenAIChatCompletionRequest):
     """
     Debug endpoint to inspect normalization without calling upstream.
     """
-    route_decision = build_router().route(
-        client_requested_model=request.model,
-        messages=request.messages,
-    )
-    result = pipeline.process(model=route_decision.resolved_model, messages=request.messages)
+    try:
+        sanitized_messages = strip_mode_hints(request.messages)
+        route_decision = build_router().route(
+            client_requested_model=request.model,
+            messages=request.messages,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": {"message": str(exc)}},
+        ) from exc
+
+    result = pipeline.process(model=route_decision.resolved_model, messages=sanitized_messages)
     return build_debug_response(request.model, route_decision, result)

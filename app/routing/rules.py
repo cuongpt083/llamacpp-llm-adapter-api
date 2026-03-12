@@ -1,9 +1,12 @@
 import re
 import unicodedata
+from typing import Literal
 
+from app.models.api_models import ChatCompletionMessage
 
 DEEP_ROLE_TRIGGERS = {"tool", "function", "observation"}
 CODE_BLOCK_PATTERN = re.compile(r"```[\s\S]*?```")
+MODE_HINT_PATTERN = re.compile(r"\[mode:(fast|deep)\]", re.IGNORECASE)
 
 DEEP_KEYWORDS = (
     "traceback",
@@ -90,3 +93,35 @@ def normalize_text(value: str) -> str:
     without_diacritics = "".join(char for char in normalized if unicodedata.category(char) != "Mn")
     collapsed = re.sub(r"\s+", " ", without_diacritics)
     return collapsed.strip()
+
+
+def extract_mode_override(messages: list[ChatCompletionMessage]) -> Literal["fast", "deep"] | None:
+    found_modes: set[str] = set()
+    for message in messages:
+        content = message.content or ""
+        for match in MODE_HINT_PATTERN.findall(content):
+            found_modes.add(match.lower())
+
+    if not found_modes:
+        return None
+    if len(found_modes) > 1:
+        raise ValueError("Conflicting mode hints detected")
+    return next(iter(found_modes))  # one value only
+
+
+def strip_mode_hints(messages: list[ChatCompletionMessage]) -> list[ChatCompletionMessage]:
+    sanitized: list[ChatCompletionMessage] = []
+    for message in messages:
+        content = message.content or ""
+        stripped = MODE_HINT_PATTERN.sub("", content)
+        stripped = re.sub(r"\s+", " ", stripped).strip()
+        sanitized.append(
+            ChatCompletionMessage(
+                role=message.role,
+                content=stripped,
+                name=message.name,
+                tool_calls=message.tool_calls,
+                tool_call_id=message.tool_call_id,
+            )
+        )
+    return sanitized

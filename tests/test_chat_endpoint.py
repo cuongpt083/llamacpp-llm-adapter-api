@@ -129,6 +129,57 @@ async def test_chat_completions_fails_over_on_network_error_for_non_streaming():
             assert route.call_count == 2
             assert response.json()["model"] == "qwen3.5-2B"
 
+
+@pytest.mark.asyncio
+async def test_chat_completions_strips_mode_hint_before_upstream():
+    settings.FAST_MODEL = "gemma-3-4b"
+    settings.DEEP_MODEL = "qwen3.5-2B"
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as ac:
+        with respx.mock:
+            upstream_route = respx.post("http://127.0.0.1:8080/v1/chat/completions").mock(
+                return_value=httpx.Response(
+                    200,
+                    json={
+                        "id": "chatcmpl-999",
+                        "model": "gemma-3-4b",
+                        "choices": [{"message": {"role": "assistant", "content": "forced fast"}}],
+                    },
+                )
+            )
+
+            payload = {
+                "model": "client-default",
+                "messages": [{"role": "user", "content": "[mode:FAST] please debug this traceback"}],
+            }
+
+            response = await ac.post("/v1/chat/completions", json=payload)
+
+            assert response.status_code == 200
+            assert response.json()["model"] == "gemma-3-4b"
+            sent_payload = upstream_route.calls.last.request.content.decode()
+            assert '"model":"gemma-3-4b"' in sent_payload
+            assert "[mode:FAST]" not in sent_payload
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_rejects_conflicting_mode_hints():
+    settings.FAST_MODEL = "gemma-3-4b"
+    settings.DEEP_MODEL = "qwen3.5-2B"
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as ac:
+        payload = {
+            "model": "client-default",
+            "messages": [
+                {"role": "user", "content": "[mode:FAST] hello"},
+                {"role": "user", "content": "[mode:DEEP] world"},
+            ],
+        }
+
+        response = await ac.post("/v1/chat/completions", json=payload)
+
+        assert response.status_code == 422
+
 @pytest.mark.asyncio
 async def test_health_endpoints():
     """Test healthz and readyz."""

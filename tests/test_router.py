@@ -1,5 +1,6 @@
 from app.models.api_models import ChatCompletionMessage
 from app.routing.router import PromptRouter
+import pytest
 
 
 def test_router_defaults_to_fast_for_simple_chat():
@@ -55,3 +56,29 @@ def test_router_routes_deep_for_tool_roles():
     assert decision.route_label == "deep"
     assert decision.resolved_model == "qwen3.5-2B"
     assert "matched_role:tool" in decision.reasons
+
+
+def test_router_force_fast_with_mode_hint():
+    router = PromptRouter(fast_model="gemma-3-4b", deep_model="qwen3.5-2B")
+
+    decision = router.route(
+        client_requested_model="gpt-4o",
+        messages=[ChatCompletionMessage(role="user", content="[mode:FAST] please debug this traceback")],
+    )
+
+    assert decision.route_label == "fast"
+    assert decision.resolved_model == "gemma-3-4b"
+    assert decision.reasons == ["override:fast"]
+
+
+def test_router_force_deep_with_mode_hint():
+    router = PromptRouter(fast_model="gemma-3-4b", deep_model="qwen3.5-2B")
+
+    decision = router.route(
+        client_requested_model="gpt-4o",
+        messages=[ChatCompletionMessage(role="user", content="[mode:DEEP] hello there")],
+    )
+
+    assert decision.route_label == "deep"
+    assert decision.resolved_model == "qwen3.5-2B"
+    assert decision.reasons == ["override:deep"]
