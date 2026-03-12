@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  adapter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      UPSTREAM_BASE_URL: ${UPSTREAM_BASE_URL:-http://host.docker.internal:8080}
+      FAST_MODEL: ${FAST_MODEL:-gemma-3-4b}
+      DEEP_MODEL: ${DEEP_MODEL:-qwen3.5-2B}
+      ENABLE_ROUTING: ${ENABLE_ROUTING:-true}
+      ENABLE_DEBUG_ENDPOINTS: ${ENABLE_DEBUG_ENDPOINTS:-true}
+      LOG_NORMALIZED_REQUESTS: ${LOG_NORMALIZED_REQUESTS:-true}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped

@@ -45,6 +45,9 @@ The adapter uses environment variables for configuration. You can set these in a
 | Variable / Biến | Description / Mô tả | Default / Mặc định |
 | :--- | :--- | :--- |
 | `UPSTREAM_BASE_URL` | URL of the `llama.cpp` server / URL của máy chủ `llama.cpp` | `http://127.0.0.1:8080` |
+| `FAST_MODEL` | Model id used for FAST routing / Model id dùng cho tuyến FAST | `gemma-3-4b` |
+| `DEEP_MODEL` | Model id used for DEEP routing / Model id dùng cho tuyến DEEP | `qwen3.5-2B` |
+| `ENABLE_ROUTING` | Enable rule-based FAST/DEEP routing / Bật định tuyến FAST/DEEP theo luật | `true` |
 | `ENABLE_DEBUG_ENDPOINTS` | Enable `/v1/chat/completions:normalize` / Bật endpoint debug | `true` |
 | `LOG_NORMALIZED_REQUESTS` | Log the content of transformed messages / Ghi log tin nhắn đã chuẩn hóa | `true` |
 
@@ -60,6 +63,28 @@ PYTHONPATH=. uvicorn app.main:app --reload --port 8000
 ### Production / Sản xuất
 ```bash
 PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+### Docker / Docker
+```bash
+docker build -t llamacpp-llm-adapter-api .
+docker run --rm -p 8000:8000 --env-file .env llamacpp-llm-adapter-api
+```
+
+### Docker Compose / Docker Compose
+```bash
+docker compose up --build
+```
+
+The repository includes example deployment files:
+
+- [Dockerfile](/home/cuongpt/Workspaces/llamacpp-llm-adapter-api/Dockerfile)
+- [docker-compose.yaml](/home/cuongpt/Workspaces/llamacpp-llm-adapter-api/docker-compose.yaml)
+
+If `llama.cpp` runs on the host machine instead of another container, set:
+
+```bash
+UPSTREAM_BASE_URL=http://host.docker.internal:8080
 ```
 
 ---

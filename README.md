@@ -547,6 +547,42 @@ ENABLE_ROUTING=true
 ENABLE_DEBUG_ENDPOINTS=true
 ```
 
+## Docker
+
+Build the adapter image:
+
+```bash
+docker build -t llamacpp-llm-adapter-api .
+```
+
+Run the container with your local `.env` file:
+
+```bash
+docker run --rm -p 8000:8000 --env-file .env llamacpp-llm-adapter-api
+```
+
+Notes:
+
+- the repository includes a multi-stage [Dockerfile](/home/cuongpt/Workspaces/llamacpp-llm-adapter-api/Dockerfile)
+- the runtime image starts `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+- when the upstream model server runs on the host machine, `UPSTREAM_BASE_URL` may need to point to `http://host.docker.internal:8080`
+
+## Docker Compose
+
+An example compose file is provided at [docker-compose.yaml](/home/cuongpt/Workspaces/llamacpp-llm-adapter-api/docker-compose.yaml).
+
+Start the adapter with:
+
+```bash
+docker compose up --build
+```
+
+The compose example:
+
+- reads variables from `.env`
+- exposes the adapter on port `8000`
+- keeps the routing variables configurable with env overrides
+
 ---
 
 # Example Client Configuration
