@@ -208,6 +208,7 @@ Handles HTTP requests:
 /v1/models
 /v1/chat/completions
 /v1/chat/completions:normalize
+/v1/responses
 ```
 
 ---
@@ -283,6 +284,7 @@ Routing behavior:
 - the adapter classifies the request from observable prompt signals
 - the upstream request uses the resolved real model name from env
 - the final response returns the actual model name that processed the request
+- both `/v1/chat/completions` and `/v1/responses` reuse the same routing and normalization flow
 
 Typical `DEEP` triggers include:
 
@@ -293,6 +295,30 @@ Typical `DEEP` triggers include:
 - explicit multi-step instruction patterns
 
 If no deep trigger matches, the adapter defaults to `FAST`.
+
+## Responses API Compatibility
+
+The adapter supports `POST /v1/responses` as a compatibility layer on top of the chat completions pipeline.
+
+Non-streaming behavior:
+
+- translates `responses.input` into chat messages
+- reuses routing, normalization, and upstream forwarding
+- wraps the final chat-completion result into a minimal Responses API-style object
+
+Streaming behavior:
+
+- accepts `stream=true` on `/v1/responses`
+- translates the request into streaming chat completions internally
+- returns `text/event-stream`
+- currently uses minimal SSE pass-through compatibility mode rather than a full Responses API event-schema mapper
+
+Current scope:
+
+- intended to work with clients that expect `/v1/responses` to exist
+- optimized for compatibility and delivery speed
+- non-streaming response objects are wrapped
+- streaming responses are proxied as SSE from the underlying chat-completions path
 
 ---
 
