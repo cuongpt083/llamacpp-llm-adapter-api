@@ -296,6 +296,54 @@ If no deep trigger matches, the adapter defaults to `FAST`.
 
 ---
 
+## Smart Pole Best Practices
+
+When gathering requirements and designing new features for this adapter, use SMART POLE before writing code.
+
+Recommended workflow:
+
+1. Start with `brainstorming` when the request is still fuzzy.
+2. Use `sp-coding-agent` to score readiness across the SP categories before implementation.
+3. Fill missing SP-atoms, especially `A` and `O`, before coding:
+   - `A` Aim: exact behavior, acceptance criteria, response contract
+   - `O` Outline: authorized scope, refactor permission, boundaries
+4. Capture the agreed rules in the implementation plan or design doc.
+5. Only after the plan is explicit, move to `test-driven-development` and implement against failing tests first.
+
+Practical lessons from this project:
+
+- Do not start coding while routing behavior is still ambiguous.
+- Make the model contract explicit early:
+  - whether the adapter trusts the client `model`
+  - which env vars resolve real upstream model ids
+  - what `model` should be returned in the final response
+- Separate logical routing labels such as `FAST` and `DEEP` from actual upstream model names.
+- Prefer observable routing rules over vague semantic intent:
+  - roles
+  - code blocks
+  - deterministic keywords and phrases
+  - multi-step patterns
+- Clarify whether refactoring is authorized before changing package structure.
+- Confirm dependency constraints up front, for example "no new deps unless necessary".
+- Record reviewer preferences early, such as maintainability, documentation clarity, and architectural cleanliness.
+- Update the implementation plan once SP-atoms are resolved, so execution and review use the same contract.
+
+Minimal SP checklist for this adapter:
+
+- `S`: follow existing FastAPI and test patterns
+- `M`: confirm team familiarity with FastAPI and routing/failover tasks
+- `A`: define routing, failback, normalization, and response semantics
+- `R`: define dependency and deployment constraints
+- `T`: define delivery urgency
+- `P`: define reviewer priorities
+- `O`: define file and refactor scope
+- `L`: confirm runtime stack and environment assumptions
+- `E`: provide sample prompts, expected route decisions, or anti-examples
+
+In practice, this means the plan should be updated before implementation, and tests should be written before production code changes.
+
+---
+
 # Example Request Flow
 
 1. Client sends request
