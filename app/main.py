@@ -13,6 +13,7 @@ app = FastAPI(
 
 # Root level health routes
 app.include_router(routes_health.router)
+app.include_router(routes_models.router)
 
 # V1 API routes
 app.include_router(routes_chat.router, prefix=settings.API_V1_STR)

@@ -32,3 +32,30 @@ async def test_models_endpoint_enriches_route_tags():
             payload = response.json()
             assert payload["data"][0]["adapter_route_tags"] == ["fast"]
             assert payload["data"][1]["adapter_route_tags"] == ["deep"]
+
+
+@pytest.mark.asyncio
+async def test_root_models_endpoint_aliases_v1_models():
+    settings.FAST_MODEL = "gemma-3-4b"
+    settings.DEEP_MODEL = "qwen3.5-2B"
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as ac:
+        with respx.mock:
+            respx.get("http://127.0.0.1:8080/v1/models").mock(
+                return_value=httpx.Response(
+                    200,
+                    json={
+                        "object": "list",
+                        "data": [
+                            {"id": "gemma-3-4b", "object": "model"},
+                        ],
+                    },
+                )
+            )
+
+            response = await ac.get("/models")
+
+            assert response.status_code == 200
+            payload = response.json()
+            assert payload["data"][0]["id"] == "gemma-3-4b"
+            assert payload["data"][0]["adapter_route_tags"] == ["fast"]
