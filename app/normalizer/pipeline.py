@@ -7,6 +7,7 @@ from app.policies.registry import registry
 class NormalizationResult(BaseModel):
     family: str
     policy: str
+    model: str
     original_messages: List[ChatCompletionMessage]
     normalized_messages: List[InternalMessage]
     transform_log: List[str]
@@ -39,6 +40,7 @@ class NormalizationPipeline:
         return NormalizationResult(
             family=policy.family,
             policy=policy.policy_name,
+            model=model,
             original_messages=messages,
             normalized_messages=normalized,
             transform_log=transform_log,

@@ -7,8 +7,11 @@ class Settings(BaseSettings):
     """
     # Upstream llama.cpp server configuration
     UPSTREAM_BASE_URL: str = "http://127.0.0.1:8080"
+    FAST_MODEL: str = "gemma-3-4b"
+    DEEP_MODEL: str = "qwen3.5-2B"
     
     # Adapter configuration
+    ENABLE_ROUTING: bool = True
     ENABLE_DEBUG_ENDPOINTS: bool = True
     LOG_NORMALIZED_REQUESTS: bool = True
     

@@ -22,6 +22,12 @@ async def list_models():
                 policy = registry.get_policy_for_model(model_id)
                 model_info["adapter_family"] = policy.family
                 model_info["adapter_policy"] = policy.policy_name
+                route_tags = []
+                if model_id == settings.FAST_MODEL:
+                    route_tags.append("fast")
+                if model_id == settings.DEEP_MODEL:
+                    route_tags.append("deep")
+                model_info["adapter_route_tags"] = route_tags
                 
         return upstream_data
     except Exception:

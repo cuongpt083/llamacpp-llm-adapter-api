@@ -263,6 +263,39 @@ Supports:
 
 ---
 
+## Routing
+
+The adapter can route each request to one of two logical modes:
+
+- `FAST`
+- `DEEP`
+
+These logical modes are resolved to real upstream model ids from environment variables:
+
+```env
+FAST_MODEL=gemma-3-4b
+DEEP_MODEL=qwen3.5-2B
+```
+
+Routing behavior:
+
+- the client-provided `model` is accepted but not trusted for upstream routing
+- the adapter classifies the request from observable prompt signals
+- the upstream request uses the resolved real model name from env
+- the final response returns the actual model name that processed the request
+
+Typical `DEEP` triggers include:
+
+- tool/function/observation roles
+- code blocks
+- coding or debugging keywords
+- planning or reasoning keywords
+- explicit multi-step instruction patterns
+
+If no deep trigger matches, the adapter defaults to `FAST`.
+
+---
+
 # Example Request Flow
 
 1. Client sends request
@@ -434,6 +467,9 @@ Example configuration:
 
 ```
 UPSTREAM_BASE_URL=http://127.0.0.1:8080
+FAST_MODEL=gemma-3-4b
+DEEP_MODEL=qwen3.5-2B
+ENABLE_ROUTING=true
 ENABLE_DEBUG_ENDPOINTS=true
 ```
 
