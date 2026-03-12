@@ -564,6 +564,7 @@ docker run --rm -p 8000:8000 --env-file .env llamacpp-llm-adapter-api
 Notes:
 
 - the repository includes a multi-stage [Dockerfile](/home/cuongpt/Workspaces/llamacpp-llm-adapter-api/Dockerfile)
+- the image uses `ubuntu:24.04` in both build and runtime stages
 - the runtime image starts `uvicorn app.main:app --host 0.0.0.0 --port 8000`
 - when the upstream model server runs on the host machine, `UPSTREAM_BASE_URL` may need to point to `http://host.docker.internal:8080`
 

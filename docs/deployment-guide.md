@@ -81,6 +81,8 @@ The repository includes example deployment files:
 - [Dockerfile](/home/cuongpt/Workspaces/llamacpp-llm-adapter-api/Dockerfile)
 - [docker-compose.yaml](/home/cuongpt/Workspaces/llamacpp-llm-adapter-api/docker-compose.yaml)
 
+The provided Docker image uses an Ubuntu 24.04 multi-stage build instead of `python:slim`, which can be a better fit in environments such as Proxmox LXC where AppArmor-related runtime friction may appear with other base images.
+
 If `llama.cpp` runs on the host machine instead of another container, set:
 
 ```bash
