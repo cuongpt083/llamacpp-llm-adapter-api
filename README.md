@@ -208,6 +208,7 @@ Handles HTTP requests:
 /v1/models
 /v1/chat/completions
 /v1/chat/completions:normalize
+/v1/responses
 ```
 
 ---
@@ -260,6 +261,112 @@ Supports:
 - JSON requests
 - streaming SSE responses
 - timeout handling
+
+---
+
+## Routing
+
+The adapter can route each request to one of two logical modes:
+
+- `FAST`
+- `DEEP`
+
+These logical modes are resolved to real upstream model ids from environment variables:
+
+```env
+FAST_MODEL=gemma-3-4b
+DEEP_MODEL=qwen3.5-2B
+```
+
+Routing behavior:
+
+- the client-provided `model` is accepted but not trusted for upstream routing
+- the adapter classifies the request from observable prompt signals
+- the upstream request uses the resolved real model name from env
+- the final response returns the actual model name that processed the request
+- both `/v1/chat/completions` and `/v1/responses` reuse the same routing and normalization flow
+
+Typical `DEEP` triggers include:
+
+- tool/function/observation roles
+- code blocks
+- coding or debugging keywords
+- planning or reasoning keywords
+- explicit multi-step instruction patterns
+
+If no deep trigger matches, the adapter defaults to `FAST`.
+
+## Responses API Compatibility
+
+The adapter supports `POST /v1/responses` as a compatibility layer on top of the chat completions pipeline.
+
+Non-streaming behavior:
+
+- translates `responses.input` into chat messages
+- reuses routing, normalization, and upstream forwarding
+- wraps the final chat-completion result into a minimal Responses API-style object
+
+Streaming behavior:
+
+- accepts `stream=true` on `/v1/responses`
+- translates the request into streaming chat completions internally
+- returns `text/event-stream`
+- currently uses minimal SSE pass-through compatibility mode rather than a full Responses API event-schema mapper
+
+Current scope:
+
+- intended to work with clients that expect `/v1/responses` to exist
+- optimized for compatibility and delivery speed
+- non-streaming response objects are wrapped
+- streaming responses are proxied as SSE from the underlying chat-completions path
+
+---
+
+## Smart Pole Best Practices
+
+When gathering requirements and designing new features for this adapter, use SMART POLE before writing code.
+
+Recommended workflow:
+
+1. Start with `brainstorming` when the request is still fuzzy.
+2. Use `sp-coding-agent` to score readiness across the SP categories before implementation.
+3. Fill missing SP-atoms, especially `A` and `O`, before coding:
+   - `A` Aim: exact behavior, acceptance criteria, response contract
+   - `O` Outline: authorized scope, refactor permission, boundaries
+4. Capture the agreed rules in the implementation plan or design doc.
+5. Only after the plan is explicit, move to `test-driven-development` and implement against failing tests first.
+
+Practical lessons from this project:
+
+- Do not start coding while routing behavior is still ambiguous.
+- Make the model contract explicit early:
+  - whether the adapter trusts the client `model`
+  - which env vars resolve real upstream model ids
+  - what `model` should be returned in the final response
+- Separate logical routing labels such as `FAST` and `DEEP` from actual upstream model names.
+- Prefer observable routing rules over vague semantic intent:
+  - roles
+  - code blocks
+  - deterministic keywords and phrases
+  - multi-step patterns
+- Clarify whether refactoring is authorized before changing package structure.
+- Confirm dependency constraints up front, for example "no new deps unless necessary".
+- Record reviewer preferences early, such as maintainability, documentation clarity, and architectural cleanliness.
+- Update the implementation plan once SP-atoms are resolved, so execution and review use the same contract.
+
+Minimal SP checklist for this adapter:
+
+- `S`: follow existing FastAPI and test patterns
+- `M`: confirm team familiarity with FastAPI and routing/failover tasks
+- `A`: define routing, failback, normalization, and response semantics
+- `R`: define dependency and deployment constraints
+- `T`: define delivery urgency
+- `P`: define reviewer priorities
+- `O`: define file and refactor scope
+- `L`: confirm runtime stack and environment assumptions
+- `E`: provide sample prompts, expected route decisions, or anti-examples
+
+In practice, this means the plan should be updated before implementation, and tests should be written before production code changes.
 
 ---
 
@@ -434,6 +541,9 @@ Example configuration:
 
 ```
 UPSTREAM_BASE_URL=http://127.0.0.1:8080
+FAST_MODEL=gemma-3-4b
+DEEP_MODEL=qwen3.5-2B
+ENABLE_ROUTING=true
 ENABLE_DEBUG_ENDPOINTS=true
 ```
 

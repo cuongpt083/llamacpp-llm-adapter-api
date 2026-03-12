@@ -1,0 +1,9 @@
+fastapi
+httpx
+pydantic
+pydantic-settings
+uvicorn
+structlog
+pytest
+pytest-asyncio
+respx
